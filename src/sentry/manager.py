@@ -407,7 +407,7 @@ class GroupManager(BaseManager, ChartMixin):
                 tags.extend(added_tags)
 
         try:
-            group, is_new, is_sample = self._create_group(
+            group, is_new, is_regression, is_sample = self._create_group(
                 event=event,
                 tags=data['tags'],
                 **group_kwargs
@@ -448,8 +448,9 @@ class GroupManager(BaseManager, ChartMixin):
             send_group_processors(
                 group=group,
                 event=event,
-                is_new=is_new,
-                is_sample=is_sample
+                is_new=is_new or is_regression,  # backwards compat
+                is_sample=is_sample,
+                is_regression=is_regression,
             )
 
         if settings.SENTRY_USE_SEARCH:
@@ -512,7 +513,7 @@ class GroupManager(BaseManager, ChartMixin):
 
             if group.status == STATUS_RESOLVED or group.is_over_resolve_age():
                 # Making things atomic
-                is_new = bool(self.filter(
+                is_regression = bool(self.filter(
                     id=group.id,
                     status=STATUS_RESOLVED,
                 ).exclude(
@@ -530,6 +531,8 @@ class GroupManager(BaseManager, ChartMixin):
                 'id': group.id,
             }, extra)
         else:
+            is_regression = False
+
             # TODO: this update should actually happen as part of create
             group.update(score=ScoreClause(group))
 
@@ -564,7 +567,7 @@ class GroupManager(BaseManager, ChartMixin):
         except Exception, e:
             logger.exception('Unable to record tags: %s' % (e,))
 
-        return group, is_new, is_sample
+        return group, is_new, is_regression, is_sample
 
     def add_tags(self, group, tags):
         from sentry.models import TagValue, GroupTag
