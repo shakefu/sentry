@@ -136,6 +136,10 @@ urlpatterns = patterns('',
         name='sentry-manage-project-quotas'),
     url(r'^(?P<team_slug>[\w_-]+)/(?P<project_id>[\w_-]+)/notifications/$', projects.notification_settings,
         name='sentry-project-notifications'),
+    url(r'^(?P<team_slug>[\w_-]+)/(?P<project_id>[\w_-]+)/rules/$', projects.list_rules,
+        name='sentry-project-rules'),
+    url(r'^(?P<team_slug>[\w_-]+)/(?P<project_id>[\w_-]+)/rules/new/$', projects.new_rule,
+        name='sentry-new-project-rule'),
 
     # Generic
     url(r'^$', generic.dashboard,

@@ -5,6 +5,8 @@ sentry.web.frontend.projects
 :copyright: (c) 2012 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
+from collections import defaultdict
+
 from django.contrib import messages
 from django.core.context_processors import csrf
 from django.core.urlresolvers import reverse
@@ -421,3 +423,36 @@ def disable_project_plugin(request, team, project, slug):
     plugin.set_option('enabled', False, project)
 
     return HttpResponseRedirect(redirect_to)
+
+
+@has_access(MEMBER_OWNER)
+def list_rules(request, team, project):
+    context = csrf(request)
+    context.update({
+        'team': team,
+        'page': 'rules',
+        'project': project,
+    })
+
+    return render_to_response('sentry/projects/rules/list.html', context, request)
+
+
+@has_access(MEMBER_OWNER)
+def new_rule(request, team, project):
+    from sentry.rules import RULES
+
+    rules_by_action = defaultdict(list)
+    for rule_id, rule in RULES.iteritems():
+        rules_by_action[rule.action_label].append(
+            (rule_id, rule().render(request.POST))
+        )
+
+    context = csrf(request)
+    context.update({
+        'team': team,
+        'page': 'rules',
+        'rules_by_action': rules_by_action.items(),
+        'project': project,
+    })
+
+    return render_to_response('sentry/projects/rules/new.html', context, request)

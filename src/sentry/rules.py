@@ -27,6 +27,13 @@ by the rule's logic. Each rule condition may be associated with a form.
 - [ACTION:I want to group events when] [RULE:an event matches [FORM]]
 
 """
+# TODO: the input concepts would conflict with each other in the HTML
+
+
+from django.utils.html import escape
+from django.utils.datastructures import SortedDict
+from django.utils.safestring import mark_safe
+
 
 NOTIFY_ON_FIRST_SEEN = 1
 NOTIFY_ON_REGRESSION = 2
@@ -48,8 +55,8 @@ class Rule(object):
         return self.condition_label
 
 
-class NotifyRule(object):
-    action_label = 'I want to get notified when'
+class NotifyRule(Rule):
+    action_label = 'I want to send notifications when'
 
     def notify(self, event):
         # TODO: fire off plugin notifications
@@ -71,7 +78,7 @@ class NotifyOnFirstSeenRule(NotifyRule):
 
 
 class NotifyOnRegressionRule(NotifyRule):
-    condition_label = 'an event is a regression'
+    condition_label = 'an event changes state from resolved to unresolved'
 
     def should_notify(self, event, is_regression, **kwargs):
         return is_regression
@@ -84,14 +91,16 @@ class NotifyOnTimesSeenRule(NotifyRule):
         return event.times_seen == self.get_option('num')
 
     def render(self, data):
-        return self.condition_label.format(
-            input='<input type="text" name="num" value="{num}">'.format(
-                num=data.get('num', '1')
+        return mark_safe(self.condition_label.format(
+            input='<input type="number" name="num" value="{num}" size="10">'.format(
+                num=escape(data.get('num', '1'))
             )
-        )
+        ))
 
-RULES = [
-    NotifyOnFirstSeenRule,
-    NotifyOnRegressionRule,
-    NotifyOnTimesSeenRule,
-]
+RULES = SortedDict(
+    ('%s.%s' % (k.__module__, k.__name__), k) for k in [
+        NotifyOnFirstSeenRule,
+        NotifyOnRegressionRule,
+        NotifyOnTimesSeenRule,
+    ]
+)

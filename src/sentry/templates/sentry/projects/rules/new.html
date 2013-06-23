@@ -1,0 +1,28 @@
+{% extends "sentry/projects/manage.html" %}
+
+{% load i18n %}
+{% load sentry_helpers %}
+
+{% block inner %}
+    <div class="page-header">
+        <h2>{% trans "New Rule" %}</h2>
+    </div>
+    <form method="POST" action="">
+        {% csrf_token %}
+        <ul class="rule-list">
+            {% for action_label, rule_choices in rules_by_action %}
+                <li class="rule-action">
+                    <label><input type="radio" name="action" value="{{ action_label }}"> {{ action_label }}</label>
+                    <ul class="rule-choices">
+                        {% for rule_id, rule in rule_choices %}
+                            <li><label><input type="radio" name="rule" value="{{ rule_id }}"> {{ rule }}</label></li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+        <div class="actions">
+            <button type="submit" class="btn btn-primary">{% trans "Save Rule" %}</button>
+        </div>
+    </form>
+{% endblock %}

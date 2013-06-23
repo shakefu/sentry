@@ -1,0 +1,10 @@
+{% extends "sentry/projects/manage.html" %}
+
+{% load i18n %}
+
+{% block inner %}
+    <div class="page-header">
+        <a href="{% url 'sentry-new-project-rule' project.team.slug project.slug %}" class="btn pull-right btn-primary">{% trans "New Rule" %}</a>
+        <h2>{% trans "Rules" %}</h2>
+    </div>
+{% endblock %}

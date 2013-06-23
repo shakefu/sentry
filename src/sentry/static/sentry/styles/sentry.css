@@ -8963,3 +8963,19 @@ table.vars table.vars th {
 .popover-content {
   padding: 4px 10px;
 }
+.rule-list {
+  list-style: none;
+}
+.rule-list li {
+  line-height: 30px;
+}
+.rule-list li input[type=number] {
+  border-width: 0 0 1px;
+  width: 50px;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+}
