@@ -35,6 +35,8 @@ from django.utils.html import escape
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
+from sentry.models import Rule as RuleModel
+
 
 NOTIFY_ON_FIRST_SEEN = 1
 NOTIFY_ON_REGRESSION = 2
@@ -55,6 +57,17 @@ class Rule(object):
     action_label = None
     condition_label = None
 
+    @classmethod
+    def from_params(cls, project, data=None):
+        rule = RuleModel(
+            project=project,
+            data=data or {},
+        )
+        return cls(rule)
+
+    def __init__(self, instance):
+        self.instance = instance
+
     def before(self, event):
         # should this pass event or the data?
         return event
@@ -62,17 +75,37 @@ class Rule(object):
     def after(self, event, is_new, is_regression, **kwargs):
         pass
 
-    def render(self, initial=None):
+    def render_label(self):
+        return ('%s %s' % (self.action_label, self.condition_label)).format(
+            **self.instance.data)
+
+    def render_form(self, form_data):
         if not self.form_cls:
             return self.condition_label
 
-        form = self.form_cls(initial, prefix=self.id)
+        form = self.form_cls(
+            form_data,
+            initial=self.instance.data,
+            prefix=self.id,
+        )
 
         def replace_field(match):
             field = match.group(1)
             return unicode(form[field])
 
         return mark_safe(re.sub(r'{([^}]+)}', replace_field, escape(self.condition_label)))
+
+    def save(self, form_data):
+        form = self.form_cls(
+            form_data,
+            initial=self.instance.data,
+            prefix=self.id,
+        )
+        assert form.is_valid(), 'Form was not valid: %r' % (form.errors,)
+        instance = self.instance
+        instance.rule_id = self.id
+        instance.data = form.cleaned_data
+        instance.save()
 
 
 class NotifyRule(Rule):

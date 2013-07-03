@@ -7,4 +7,9 @@
         <a href="{% url 'sentry-new-project-rule' project.team.slug project.slug %}" class="btn pull-right btn-primary">{% trans "New Rule" %}</a>
         <h2>{% trans "Rules" %}</h2>
     </div>
+    <ul>
+        {% for rule, label in rule_list %}
+            <li>{{ label }}</li>
+        {% endfor %}
+    </ul>
 {% endblock %}

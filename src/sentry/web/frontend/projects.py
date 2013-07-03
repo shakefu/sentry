@@ -18,7 +18,7 @@ from django.utils.translation import ugettext_lazy as _
 from sentry import app
 from sentry.constants import (
     MEMBER_OWNER, STATUS_HIDDEN, DEFAULT_ALERT_PROJECT_THRESHOLD)
-from sentry.models import Project, ProjectKey, Team, TagKey
+from sentry.models import Project, ProjectKey, Team, TagKey, Rule
 from sentry.permissions import (
     can_remove_project, can_add_project_key, can_remove_project_key)
 from sentry.plugins import plugins
@@ -427,11 +427,24 @@ def disable_project_plugin(request, team, project, slug):
 
 @has_access(MEMBER_OWNER)
 def list_rules(request, team, project):
+    from sentry.rules import RULES
+
+    rule_instance_list = sorted(
+        Rule.objects.filter(project=project),
+        key=lambda x: x.date_added
+    )
+    rule_list = []
+    for rule_inst in rule_instance_list:
+        rule_cls = RULES[rule_inst.rule_id]
+        rule = rule_cls(rule_inst)
+        rule_list.append((rule_inst, rule.render_label()))
+
     context = csrf(request)
     context.update({
         'team': team,
         'page': 'rules',
         'project': project,
+        'rule_list': rule_list,
     })
 
     return render_to_response('sentry/projects/rules/list.html', context, request)
@@ -444,13 +457,22 @@ def new_rule(request, team, project):
     selected_rule = request.POST.get('rule')
 
     if request.POST:
-        rule = RULES[selected_rule]
-        print rule
+        rule_cls = RULES[selected_rule]
+        rule = rule_cls.from_params(project)
+        rule.save(request.POST)
+
+        messages.add_message(
+            request, messages.SUCCESS,
+            _('Changes to your rule were saved.'))
+
+        path = reverse('sentry-project-rules', args=[team.slug, project.slug])
+        return HttpResponseRedirect(path)
 
     rules_by_action = defaultdict(list)
-    for rule_id, rule in RULES.iteritems():
+    for rule_id, rule_cls in RULES.iteritems():
+        rule = rule_cls.from_params(project)
         rules_by_action[rule.action_label].append(
-            (rule_id, rule().render(request.POST))
+            (rule_id, rule.render_form(request.POST))
         )
 
     context = csrf(request)
