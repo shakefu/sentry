@@ -5,6 +5,7 @@ Basic actions:
 
 - I want to get notified when [X]
 - I want to group events when [X]
+- I want to scrub data when [X]
 
 Expanded:
 
@@ -27,9 +28,9 @@ by the rule's logic. Each rule condition may be associated with a form.
 - [ACTION:I want to group events when] [RULE:an event matches [FORM]]
 
 """
-# TODO: the input concepts would conflict with each other in the HTML
+import re
 
-
+from django import forms
 from django.utils.html import escape
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
@@ -40,7 +41,17 @@ NOTIFY_ON_REGRESSION = 2
 NOTIFY_ON_RATE_CHANGE = 3
 
 
+class RuleBase(type):
+    def __new__(cls, *args, **kwargs):
+        new_cls = super(RuleBase, cls).__new__(cls, *args, **kwargs)
+        new_cls.id = '%s.%s' % (new_cls.__module__, new_cls.__name__)
+        return new_cls
+
+
 class Rule(object):
+    __metaclass__ = RuleBase
+
+    form_cls = None
     action_label = None
     condition_label = None
 
@@ -52,7 +63,16 @@ class Rule(object):
         pass
 
     def render(self, initial=None):
-        return self.condition_label
+        if not self.form_cls:
+            return self.condition_label
+
+        form = self.form_cls(initial, prefix=self.id)
+
+        def replace_field(match):
+            field = match.group(1)
+            return unicode(form[field])
+
+        return mark_safe(re.sub(r'{([^}]+)}', replace_field, escape(self.condition_label)))
 
 
 class NotifyRule(Rule):
@@ -84,21 +104,20 @@ class NotifyOnRegressionRule(NotifyRule):
         return is_regression
 
 
+class NotifyOnTimesSeenForm(forms.Form):
+    num = forms.IntegerField(widget=forms.TextInput(attrs={'type': 'number'}))
+
+
 class NotifyOnTimesSeenRule(NotifyRule):
-    condition_label = 'an event is seen more than {input} times'
+    form_cls = NotifyOnTimesSeenForm
+    condition_label = 'an event is seen more than {num} times'
 
     def should_notify(self, event):
         return event.times_seen == self.get_option('num')
 
-    def render(self, data):
-        return mark_safe(self.condition_label.format(
-            input='<input type="number" name="num" value="{num}" size="10">'.format(
-                num=escape(data.get('num', '1'))
-            )
-        ))
 
 RULES = SortedDict(
-    ('%s.%s' % (k.__module__, k.__name__), k) for k in [
+    (k.id, k) for k in [
         NotifyOnFirstSeenRule,
         NotifyOnRegressionRule,
         NotifyOnTimesSeenRule,

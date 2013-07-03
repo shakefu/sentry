@@ -15,7 +15,7 @@
                     <label><input type="radio" name="action" value="{{ action_label }}"> {{ action_label }}</label>
                     <ul class="rule-choices">
                         {% for rule_id, rule in rule_choices %}
-                            <li><label><input type="radio" name="rule" value="{{ rule_id }}"> {{ rule }}</label></li>
+                            <li><label><input type="radio" name="rule" value="{{ rule_id }}"{% if rule_id == selected_rule %} checked="checked"{% endif %}> {{ rule }}</label></li>
                         {% endfor %}
                     </ul>
                 </li>

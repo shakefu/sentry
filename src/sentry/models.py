@@ -417,6 +417,17 @@ class ProjectOption(Model):
     __repr__ = sane_repr('project_id', 'key', 'value')
 
 
+class Rule(Model):
+    project = models.ForeignKey(Project)
+    rule_id = models.CharField(max_length=64, db_index=True)
+    data = GzippedDictField()
+
+    class Meta:
+        db_table = 'sentry_rule'
+
+    __repr__ = sane_repr('project_id', 'rule_id')
+
+
 class PendingTeamMember(Model):
     """
     Identifies relationships between teams and pending invites.

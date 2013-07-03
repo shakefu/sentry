@@ -441,6 +441,12 @@ def list_rules(request, team, project):
 def new_rule(request, team, project):
     from sentry.rules import RULES
 
+    selected_rule = request.POST.get('rule')
+
+    if request.POST:
+        rule = RULES[selected_rule]
+        print rule
+
     rules_by_action = defaultdict(list)
     for rule_id, rule in RULES.iteritems():
         rules_by_action[rule.action_label].append(
@@ -452,6 +458,7 @@ def new_rule(request, team, project):
         'team': team,
         'page': 'rules',
         'rules_by_action': rules_by_action.items(),
+        'selected_rule': selected_rule,
         'project': project,
     })
 
