@@ -14,6 +14,7 @@ class Migration(SchemaMigration):
             ('project', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sentry.Project'])),
             ('rule_id', self.gf('django.db.models.fields.CharField')(max_length=64, db_index=True)),
             ('data', self.gf('django.db.models.fields.TextField')()),
+            ('date_added', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
         ))
         db.send_create_signal(u'sentry', ['Rule'])
 
@@ -257,6 +258,7 @@ class Migration(SchemaMigration):
         u'sentry.rule': {
             'Meta': {'object_name': 'Rule'},
             'data': ('django.db.models.fields.TextField', [], {}),
+            'date_added': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sentry.Project']"}),
             'rule_id': ('django.db.models.fields.CharField', [], {'max_length': '64', 'db_index': 'True'})
