@@ -96,15 +96,18 @@ class Rule(object):
         return mark_safe(re.sub(r'{([^}]+)}', replace_field, escape(self.condition_label)))
 
     def save(self, form_data):
-        form = self.form_cls(
-            form_data,
-            initial=self.instance.data,
-            prefix=self.id,
-        )
-        assert form.is_valid(), 'Form was not valid: %r' % (form.errors,)
         instance = self.instance
+
+        if self.form_cls:
+            form = self.form_cls(
+                form_data,
+                initial=self.instance.data,
+                prefix=self.id,
+            )
+            assert form.is_valid(), 'Form was not valid: %r' % (form.errors,)
+            instance.data = form.cleaned_data
+
         instance.rule_id = self.id
-        instance.data = form.cleaned_data
         instance.save()
 
 
