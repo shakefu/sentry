@@ -59,6 +59,12 @@
                 {% endif %}
 
                 {% include "sentry/partial/_event_details.html" %}
+
+                <div id="comments">
+                    <div class="page-header">
+                        <h2>{% trans "Comments" %}></h2>
+                    </div>
+                </div>
             {% endwith %}
         {% endblock %}
     </section>
