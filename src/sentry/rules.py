@@ -55,7 +55,7 @@ class Rule(object):
 
     form_cls = None
     action_label = None
-    condition_label = None
+    trigger_label = None
 
     @classmethod
     def from_params(cls, project, data=None):
@@ -76,12 +76,12 @@ class Rule(object):
         pass
 
     def render_label(self):
-        return ('%s %s' % (self.action_label, self.condition_label)).format(
+        return ('%s %s' % (self.action_label, self.trigger_label)).format(
             **self.instance.data)
 
     def render_form(self, form_data):
         if not self.form_cls:
-            return self.condition_label
+            return self.trigger_label
 
         form = self.form_cls(
             form_data,
@@ -93,7 +93,7 @@ class Rule(object):
             field = match.group(1)
             return unicode(form[field])
 
-        return mark_safe(re.sub(r'{([^}]+)}', replace_field, escape(self.condition_label)))
+        return mark_safe(re.sub(r'{([^}]+)}', replace_field, escape(self.trigger_label)))
 
     def save(self, form_data):
         instance = self.instance
@@ -112,7 +112,7 @@ class Rule(object):
 
 
 class NotifyRule(Rule):
-    action_label = 'I want to send notifications when'
+    action_label = 'Send a notification'
 
     def notify(self, event):
         # TODO: fire off plugin notifications
@@ -127,14 +127,14 @@ class NotifyRule(Rule):
 
 
 class NotifyOnFirstSeenRule(NotifyRule):
-    condition_label = 'an event is first seen'
+    trigger_label = 'An event is first seen'
 
     def should_notify(self, event, is_new, **kwargs):
         return is_new
 
 
 class NotifyOnRegressionRule(NotifyRule):
-    condition_label = 'an event changes state from resolved to unresolved'
+    trigger_label = 'An event changes state from resolved to unresolved'
 
     def should_notify(self, event, is_regression, **kwargs):
         return is_regression
@@ -146,7 +146,7 @@ class NotifyOnTimesSeenForm(forms.Form):
 
 class NotifyOnTimesSeenRule(NotifyRule):
     form_cls = NotifyOnTimesSeenForm
-    condition_label = 'an event is seen more than {num} times'
+    trigger_label = 'An event is seen more than {num} times'
 
     def should_notify(self, event):
         return event.times_seen == self.get_option('num')

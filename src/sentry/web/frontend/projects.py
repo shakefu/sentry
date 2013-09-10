@@ -22,10 +22,12 @@ from sentry.models import Project, ProjectKey, Team, TagKey, Rule
 from sentry.permissions import (
     can_remove_project, can_add_project_key, can_remove_project_key)
 from sentry.plugins import plugins
+from sentry.utils import json
 from sentry.web.decorators import login_required, has_access
 from sentry.web.forms.projects import (
     ProjectTagsForm, RemoveProjectForm, EditProjectForm,
-    NotificationTagValuesForm, AlertSettingsForm, ProjectQuotasForm)
+    NotificationTagValuesForm, AlertSettingsForm, ProjectQuotasForm,
+    NewRuleForm)
 from sentry.web.helpers import render_to_response, plugin_config
 
 
@@ -56,7 +58,8 @@ def remove_project(request, team, project):
             delete_project.delay(object_id=project.id)
             project.update(status=STATUS_HIDDEN)
 
-            messages.add_message(request, messages.SUCCESS,
+            messages.add_message(
+                request, messages.SUCCESS,
                 _('Deletion has been queued and should occur shortly.'))
         elif removal_type == '2':
             new_project = form.cleaned_data['project']
@@ -454,12 +457,12 @@ def list_rules(request, team, project):
 def new_rule(request, team, project):
     from sentry.rules import RULES
 
-    selected_rule = request.POST.get('rule')
+    form = NewRuleForm(request.POST or None)
 
-    if request.POST:
-        rule_cls = RULES[selected_rule]
-        rule = rule_cls.from_params(project)
-        rule.save(request.POST)
+    if request.POST and form.is_valid():
+        # rule_cls = RULES[selected_rule]
+        # rule = rule_cls.from_params(project)
+        # rule.save(request.POST)
 
         messages.add_message(
             request, messages.SUCCESS,
@@ -471,16 +474,23 @@ def new_rule(request, team, project):
     rules_by_action = defaultdict(list)
     for rule_id, rule_cls in RULES.iteritems():
         rule = rule_cls.from_params(project)
-        rules_by_action[rule.action_label].append(
-            (rule_id, rule.render_form(request.POST))
-        )
+        rules_by_action[rule.action_label].append({
+            'id': rule_id,
+            'label': rule.trigger_label,
+            'html': rule.render_form(request.POST),
+        })
+
+    rule_list = [{
+        'label': k,
+        'triggers': v,
+    } for k, v in rules_by_action.iteritems()]
 
     context = csrf(request)
     context.update({
         'team': team,
         'page': 'rules',
-        'rules_by_action': rules_by_action.items(),
-        'selected_rule': selected_rule,
+        'rules_by_action': json.dumps(rule_list),
+        'form': form,
         'project': project,
     })
 

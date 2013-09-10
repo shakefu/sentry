@@ -619,6 +619,77 @@
 
     });
 
+
+    app.NewProjectRulePage = BasePage.extend({
+
+        initialize: function(data){
+            BasePage.prototype.initialize.apply(this, arguments);
+
+            _.bindAll(this, 'populateTriggers', 'addRule');
+
+            this.rules_by_action = {}
+            this.triggers_by_id = {}
+            this.el = $(data.el);
+            this.action_sel = this.el.find('select[name="action"]');
+            this.trigger_sel = this.el.find('select[name="trigger"]');
+            this.trigger_table = this.el.find('table.trigger-list');
+            this.trigger_table_body = this.trigger_table.find('tbody');
+
+            this.action_sel.empty();
+            $.each(data.rules, _.bind(function(_, action) {
+                var opt = $('<option></option>');
+                opt.attr({
+                    value: action.label,
+                });
+                opt.text(action.label);
+                opt.appendTo(this.action_sel);
+
+                this.rules_by_action[action.label] = action;
+            }, this));
+
+            this.action_sel.change(this.populateTriggers).change();
+            this.trigger_sel.change(this.addRule);
+        },
+
+        populateTriggers: function(){
+            var rule = this.rules_by_action[this.action_sel.val()];
+
+            this.trigger_table.hide();
+            this.trigger_table_body.empty();
+
+            this.trigger_sel.empty();
+            this.trigger_sel.append($('<option></option>'));
+            $.each(rule.triggers, _.bind(function(_, trigger) {
+                this.triggers_by_id[trigger.id] = trigger;
+                var opt = $('<option></option>');
+                opt.attr({
+                    value: trigger.id,
+                });
+                opt.text(trigger.label);
+                opt.appendTo(this.trigger_sel);
+            }, this));
+        },
+
+        addRule: function() {
+            var trigger = this.triggers_by_id[this.trigger_sel.val()];
+            var row = $('<tr></tr>');
+            var remove_btn = $('<button class="btn btn-small" data-action="remove-rule">Remove</button>');
+
+            row.append($('<td>' + trigger.html + '</td>'));
+            row.append($('<td></td>').append(remove_btn));
+            row.appendTo(this.trigger_table_body);
+
+            remove_btn.click(function(){
+                row.remove();
+                return false;
+            });
+
+            this.trigger_sel.data("select2").clear();
+            this.trigger_table.show();
+        }
+
+    });
+
     Backbone.sync = function(method, model, success, error){
         success();
     };

@@ -7,22 +7,45 @@
     <div class="page-header">
         <h2>{% trans "New Rule" %}</h2>
     </div>
-    <form method="POST" action="">
+    <form method="POST" action="" id="new-rule-form">
         {% csrf_token %}
-        <ul class="rule-list">
-            {% for action_label, rule_choices in rules_by_action %}
-                <li class="rule-action">
-                    <label><input type="radio" name="action" value="{{ action_label }}"> {{ action_label }}</label>
-                    <ul class="rule-choices">
-                        {% for rule_id, rule in rule_choices %}
-                            <li><label><input type="radio" name="rule" value="{{ rule_id }}"{% if rule_id == selected_rule %} checked="checked"{% endif %}> {{ rule }}</label></li>
-                        {% endfor %}
-                    </ul>
-                </li>
-            {% endfor %}
-        </ul>
+
+        <p>A rule consists of a single action and one or more triggers.</p>
+        <fieldset>
+            <div><legend>Details</legend></div>
+            {% include "sentry/partial/form_base.html" %}
+        </fieldset>
+
+        <fieldset>
+            <div><legend>Action</legend></div>
+            <div class="controls">
+                <select name="action" class="span6" placeholder="select an action"></select>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <div><legend>Triggers</legend></div>
+            <table class="trigger-list table table-striped">
+                <colgroup>
+                    <col>
+                    <col style="width:50px">
+                </colgroup>
+                <tbody></tbody>
+            </table>
+            <div class="controls">
+                <select name="trigger" class="span6" placeholder="add a trigger"></select>
+            </div>
+        </fieldset>
+
         <div class="actions">
             <button type="submit" class="btn btn-primary">{% trans "Save Rule" %}</button>
         </div>
     </form>
+
+    <script>
+    new app.NewProjectRulePage({
+        el: '#new-rule-form',
+        rules: {{ rules_by_action|safe }}
+    });
+    </script>
 {% endblock %}

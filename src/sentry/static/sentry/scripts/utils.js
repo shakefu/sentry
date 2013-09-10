@@ -34,7 +34,7 @@
 
             if (href.indexOf('?') == -1)
                 return vars;
-            
+
             hashes = href.slice(href.indexOf('?') + 1, (href.indexOf('#') != -1 ? href.indexOf('#') : href.length)).split('&');
             $.each(hashes, function(_, chunk){
                 hash = chunk.split('=');
@@ -56,7 +56,7 @@
             var b, x, y, o, p;
 
             number = parseInt(number, 10);
-            
+
             for (var i=0; (b=number_formats[i]); i++){
                 x = b[0];
                 y = b[1];
@@ -107,7 +107,7 @@
         slugify: function(str) {
             str = str.replace(/^\s+|\s+$/g, ''); // trim
             str = str.toLowerCase();
-          
+
             // remove accents, swap ñ for n, etc
             var from = "àáäâèéëêìíïîòóöôùúüûñç·/_,:;";
             var to   = "aaaaeeeeiiiioooouuuunc------";
@@ -278,7 +278,8 @@
             var $this = $(this),
                 options = {
                     width: 'element',
-                    allowClear: false
+                    allowClear: false,
+                    minimumResultsForSearch: 10,
                 };
 
             if ($this.attr('data-allowClear')) {
