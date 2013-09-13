@@ -625,67 +625,82 @@
         initialize: function(data){
             BasePage.prototype.initialize.apply(this, arguments);
 
-            _.bindAll(this, 'populateTriggers', 'addRule');
+            _.bindAll(this, 'addAction', 'addCondition');
 
-            this.rules_by_action = {}
-            this.triggers_by_id = {}
+            this.actions_by_id = {};
+            this.conditions_by_id = {};
             this.el = $(data.el);
             this.action_sel = this.el.find('select[name="action"]');
-            this.trigger_sel = this.el.find('select[name="trigger"]');
-            this.trigger_table = this.el.find('table.trigger-list');
-            this.trigger_table_body = this.trigger_table.find('tbody');
+            this.action_table = this.el.find('table.action-list');
+            this.action_table_body = this.action_table.find('tbody');
+            this.condition_sel = this.el.find('select[name="condition"]');
+            this.condition_table = this.el.find('table.condition-list');
+            this.condition_table_body = this.condition_table.find('tbody');
 
             this.action_sel.empty();
-            $.each(data.rules, _.bind(function(_, action) {
+            this.action_sel.append($('<option></option>'));
+            $.each(data.actions, _.bind(function(_, action) {
                 var opt = $('<option></option>');
                 opt.attr({
-                    value: action.label,
+                    value: action.id,
                 });
                 opt.text(action.label);
                 opt.appendTo(this.action_sel);
 
-                this.rules_by_action[action.label] = action;
+                this.actions_by_id[action.id] = action;
             }, this));
 
-            this.action_sel.change(this.populateTriggers).change();
-            this.trigger_sel.change(this.addRule);
-        },
-
-        populateTriggers: function(){
-            var rule = this.rules_by_action[this.action_sel.val()];
-
-            this.trigger_table.hide();
-            this.trigger_table_body.empty();
-
-            this.trigger_sel.empty();
-            this.trigger_sel.append($('<option></option>'));
-            $.each(rule.triggers, _.bind(function(_, trigger) {
-                this.triggers_by_id[trigger.id] = trigger;
+            this.condition_sel.empty();
+            this.condition_sel.append($('<option></option>'));
+            $.each(data.conditions, _.bind(function(_, condition) {
                 var opt = $('<option></option>');
                 opt.attr({
-                    value: trigger.id,
+                    value: condition.id,
                 });
-                opt.text(trigger.label);
-                opt.appendTo(this.trigger_sel);
+                opt.text(condition.label);
+                opt.appendTo(this.condition_sel);
+
+                this.conditions_by_id[condition.id] = condition;
             }, this));
+
+            this.action_sel.change(this.addAction);
+            this.condition_sel.change(this.addCondition);
         },
 
-        addRule: function() {
-            var trigger = this.triggers_by_id[this.trigger_sel.val()];
+        addCondition: function() {
+            var condition = this.conditions_by_id[this.condition_sel.val()];
             var row = $('<tr></tr>');
-            var remove_btn = $('<button class="btn btn-small" data-action="remove-rule">Remove</button>');
+            var remove_btn = $('<button class="btn btn-small">Remove</button>');
 
-            row.append($('<td>' + trigger.html + '</td>'));
+            row.append($('<td>' + condition.html + '</td>'));
             row.append($('<td></td>').append(remove_btn));
-            row.appendTo(this.trigger_table_body);
+            row.appendTo(this.condition_table_body);
 
             remove_btn.click(function(){
                 row.remove();
                 return false;
             });
 
-            this.trigger_sel.data("select2").clear();
-            this.trigger_table.show();
+            this.condition_sel.data("select2").clear();
+            this.condition_table.show();
+        },
+
+        addAction: function() {
+            var action = this.actions_by_id[this.action_sel.val()];
+            var row = $('<tr></tr>');
+            var remove_btn = $('<button class="btn btn-small">Remove</button>');
+
+            row.append($('<td>' + action.html + '</td>'));
+            row.append($('<td></td>').append(remove_btn));
+            row.appendTo(this.action_table_body);
+
+            remove_btn.click(function(){
+                row.remove();
+                return false;
+            });
+
+            this.action_sel.data("select2").clear();
+            this.action_table.show();
         }
 
     });

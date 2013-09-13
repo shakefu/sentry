@@ -32,7 +32,6 @@ import re
 
 from django import forms
 from django.utils.html import escape
-from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
 from sentry.models import Rule as RuleModel
@@ -43,19 +42,21 @@ NOTIFY_ON_REGRESSION = 2
 NOTIFY_ON_RATE_CHANGE = 3
 
 
-class RuleBase(type):
+class RuleDescriptor(type):
     def __new__(cls, *args, **kwargs):
-        new_cls = super(RuleBase, cls).__new__(cls, *args, **kwargs)
+        new_cls = super(RuleDescriptor, cls).__new__(cls, *args, **kwargs)
         new_cls.id = '%s.%s' % (new_cls.__module__, new_cls.__name__)
         return new_cls
 
 
-class Rule(object):
-    __metaclass__ = RuleBase
-
+class RuleBase(object):
+    label = None
     form_cls = None
-    action_label = None
-    trigger_label = None
+
+    __metaclass__ = RuleDescriptor
+
+    def __init__(self, instance):
+        self.instance = instance
 
     @classmethod
     def from_params(cls, project, data=None):
@@ -65,23 +66,12 @@ class Rule(object):
         )
         return cls(rule)
 
-    def __init__(self, instance):
-        self.instance = instance
-
-    def before(self, event):
-        # should this pass event or the data?
-        return event
-
-    def after(self, event, is_new, is_regression, **kwargs):
-        pass
-
     def render_label(self):
-        return ('%s %s' % (self.action_label, self.trigger_label)).format(
-            **self.instance.data)
+        return self.label.format(**self.instance.data)
 
     def render_form(self, form_data):
         if not self.form_cls:
-            return self.trigger_label
+            return self.label
 
         form = self.form_cls(
             form_data,
@@ -93,26 +83,51 @@ class Rule(object):
             field = match.group(1)
             return unicode(form[field])
 
-        return mark_safe(re.sub(r'{([^}]+)}', replace_field, escape(self.trigger_label)))
-
-    def save(self, form_data):
-        instance = self.instance
-
-        if self.form_cls:
-            form = self.form_cls(
-                form_data,
-                initial=self.instance.data,
-                prefix=self.id,
-            )
-            assert form.is_valid(), 'Form was not valid: %r' % (form.errors,)
-            instance.data = form.cleaned_data
-
-        instance.rule_id = self.id
-        instance.save()
+        return mark_safe(re.sub(r'{([^}]+)}', replace_field, escape(self.label)))
 
 
-class NotifyRule(Rule):
-    action_label = 'Send a notification'
+# class Rule(RuleMixin):
+#     __metaclass__ = RuleBase
+
+#     def before(self, event):
+#         # should this pass event or the data?
+#         return event
+
+#     def after(self, event, is_new, is_regression, **kwargs):
+#         pass
+
+#     def save(self, form_data):
+#         instance = self.instance
+
+#         if self.form_cls:
+#             form = self.form_cls(
+#                 form_data,
+#                 initial=self.instance.data,
+#                 prefix=self.id,
+#             )
+#             assert form.is_valid(), 'Form was not valid: %r' % (form.errors,)
+#             instance.data = form.cleaned_data
+
+#         instance.rule_id = self.id
+#         instance.save()
+
+
+class EventAction(RuleBase):
+    def before(self, event):
+        # should this pass event or the data?
+        return event
+
+    def after(self, event, is_new, is_regression, **kwargs):
+        pass
+
+
+class EventCondition(RuleBase):
+    def passes(self, event, is_new, is_regression, **kwargs):
+        raise NotImplementedError
+
+
+class NotifyEventAction(EventAction):
+    label = 'Send a notification'
 
     def notify(self, event):
         # TODO: fire off plugin notifications
@@ -122,40 +137,45 @@ class NotifyRule(Rule):
         if self.should_notify(event):
             self.notify(event)
 
-    def should_notify(self, event):
+    def passes(self, event, **kwargs):
         raise NotImplementedError
 
 
-class NotifyOnFirstSeenRule(NotifyRule):
-    trigger_label = 'An event is first seen'
+class FirstSeenEventCondition(EventCondition):
+    label = 'An event is first seen'
 
-    def should_notify(self, event, is_new, **kwargs):
+    def passes(self, event, is_new, **kwargs):
         return is_new
 
 
-class NotifyOnRegressionRule(NotifyRule):
-    trigger_label = 'An event changes state from resolved to unresolved'
+class RegressionEventCondition(EventCondition):
+    label = 'An event changes state from resolved to unresolved'
 
-    def should_notify(self, event, is_regression, **kwargs):
+    def passes(self, event, is_regression, **kwargs):
         return is_regression
 
 
-class NotifyOnTimesSeenForm(forms.Form):
+class TimesSeenEventForm(forms.Form):
     num = forms.IntegerField(widget=forms.TextInput(attrs={'type': 'number'}))
 
 
-class NotifyOnTimesSeenRule(NotifyRule):
-    form_cls = NotifyOnTimesSeenForm
-    trigger_label = 'An event is seen more than {num} times'
+class TimesSeenEventCondition(EventCondition):
+    form_cls = TimesSeenEventForm
+    label = 'An event is seen more than {num} times'
 
-    def should_notify(self, event):
+    def passes(self, event):
         return event.times_seen == self.get_option('num')
 
 
-RULES = SortedDict(
-    (k.id, k) for k in [
-        NotifyOnFirstSeenRule,
-        NotifyOnRegressionRule,
-        NotifyOnTimesSeenRule,
-    ]
-)
+RULES = {
+    'events': {
+        'actions': [
+            NotifyEventAction,
+        ],
+        'conditions': [
+            FirstSeenEventCondition,
+            RegressionEventCondition,
+            TimesSeenEventCondition,
+        ],
+    }
+}

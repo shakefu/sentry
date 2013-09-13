@@ -5,8 +5,6 @@ sentry.web.frontend.projects
 :copyright: (c) 2012 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
 """
-from collections import defaultdict
-
 from django.contrib import messages
 from django.core.context_processors import csrf
 from django.core.urlresolvers import reverse
@@ -471,25 +469,32 @@ def new_rule(request, team, project):
         path = reverse('sentry-project-rules', args=[team.slug, project.slug])
         return HttpResponseRedirect(path)
 
-    rules_by_action = defaultdict(list)
-    for rule_id, rule_cls in RULES.iteritems():
-        rule = rule_cls.from_params(project)
-        rules_by_action[rule.action_label].append({
-            'id': rule_id,
-            'label': rule.trigger_label,
-            'html': rule.render_form(request.POST),
+    rules = RULES['events']
+    action_list = []
+    condition_list = []
+
+    for action_cls in rules['actions']:
+        action = action_cls.from_params(project)
+        action_list.append({
+            'id': action.id,
+            'label': action.label,
+            'html': action.render_form(request.POST),
         })
 
-    rule_list = [{
-        'label': k,
-        'triggers': v,
-    } for k, v in rules_by_action.iteritems()]
+    for condition_cls in rules['conditions']:
+        condition = condition_cls.from_params(project)
+        condition_list.append({
+            'id': condition.id,
+            'label': condition.label,
+            'html': condition.render_form(request.POST),
+        })
 
     context = csrf(request)
     context.update({
         'team': team,
         'page': 'rules',
-        'rules_by_action': json.dumps(rule_list),
+        'action_list': json.dumps(action_list),
+        'condition_list': json.dumps(condition_list),
         'form': form,
         'project': project,
     })
