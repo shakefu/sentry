@@ -12,7 +12,7 @@ class Migration(SchemaMigration):
         db.create_table('sentry_rule', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('project', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sentry.Project'])),
-            ('rule_id', self.gf('django.db.models.fields.CharField')(max_length=64, db_index=True)),
+            ('label', self.gf('django.db.models.fields.CharField')(max_length=64)),
             ('data', self.gf('django.db.models.fields.TextField')()),
             ('date_added', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
         ))
@@ -177,6 +177,14 @@ class Migration(SchemaMigration):
             'key': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'value': ('django.db.models.fields.TextField', [], {})
         },
+        u'sentry.groupseen': {
+            'Meta': {'unique_together': "(('user', 'group'),)", 'object_name': 'GroupSeen'},
+            'group': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sentry.Group']"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'last_seen': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'project': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sentry.Project']"}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['auth.User']", 'db_index': 'False'})
+        },
         u'sentry.grouptag': {
             'Meta': {'unique_together': "(('project', 'key', 'value', 'group'),)", 'object_name': 'GroupTag', 'db_table': "'sentry_messagefiltervalue'"},
             'first_seen': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'null': 'True', 'db_index': 'True'}),
@@ -260,8 +268,8 @@ class Migration(SchemaMigration):
             'data': ('django.db.models.fields.TextField', [], {}),
             'date_added': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'project': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sentry.Project']"}),
-            'rule_id': ('django.db.models.fields.CharField', [], {'max_length': '64', 'db_index': 'True'})
+            'label': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'project': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sentry.Project']"})
         },
         u'sentry.searchdocument': {
             'Meta': {'unique_together': "(('project', 'group'),)", 'object_name': 'SearchDocument'},

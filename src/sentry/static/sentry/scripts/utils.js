@@ -279,7 +279,7 @@
                 options = {
                     width: 'element',
                     allowClear: false,
-                    minimumResultsForSearch: 10,
+                    minimumResultsForSearch: 10
                 };
 
             if ($this.attr('data-allowClear')) {

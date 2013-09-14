@@ -625,7 +625,7 @@
         initialize: function(data){
             BasePage.prototype.initialize.apply(this, arguments);
 
-            _.bindAll(this, 'addAction', 'addCondition');
+            _.bindAll(this, 'addAction', 'addCondition', 'submitForm');
 
             this.actions_by_id = {};
             this.conditions_by_id = {};
@@ -636,13 +636,14 @@
             this.condition_sel = this.el.find('select[name="condition"]');
             this.condition_table = this.el.find('table.condition-list');
             this.condition_table_body = this.condition_table.find('tbody');
+            this.form = this.el.find('form');
 
             this.action_sel.empty();
             this.action_sel.append($('<option></option>'));
             $.each(data.actions, _.bind(function(_, action) {
                 var opt = $('<option></option>');
                 opt.attr({
-                    value: action.id,
+                    value: action.id
                 });
                 opt.text(action.label);
                 opt.appendTo(this.action_sel);
@@ -655,7 +656,7 @@
             $.each(data.conditions, _.bind(function(_, condition) {
                 var opt = $('<option></option>');
                 opt.attr({
-                    value: condition.id,
+                    value: condition.id
                 });
                 opt.text(condition.label);
                 opt.appendTo(this.condition_sel);
@@ -665,14 +666,24 @@
 
             this.action_sel.change(this.addAction);
             this.condition_sel.change(this.addCondition);
+
+            this.form.submit(this.submitForm);
         },
 
         addCondition: function() {
-            var condition = this.conditions_by_id[this.condition_sel.val()];
+            var node = this.conditions_by_id[this.condition_sel.val()];
             var row = $('<tr></tr>');
             var remove_btn = $('<button class="btn btn-small">Remove</button>');
+            var num = this.condition_table_body.find('tr').length;
+            var html = $('<div>' + node.html + '</div>');
+            var id_field = $('<input type="hidden" name="id[' + num + ']" value="' + node.id + '">');
 
-            row.append($('<td>' + condition.html + '</td>'));
+            // we need to update the id of all form elements
+            html.find('input, select, textarea').each(function(_, el){
+                var $el = $(el);
+                $el.attr('name', $el.attr('name') + '[' + num + ']');
+            });
+            row.append($('<td></td>').append(html).append(id_field));
             row.append($('<td></td>').append(remove_btn));
             row.appendTo(this.condition_table_body);
 
@@ -689,8 +700,16 @@
             var action = this.actions_by_id[this.action_sel.val()];
             var row = $('<tr></tr>');
             var remove_btn = $('<button class="btn btn-small">Remove</button>');
+            var num = this.action_table_body.find('tr').length;
+            var html = $('<div>' + action.html + '</div>');
+            var id_field = $('<input type="hidden" name="id[' + num + ']" value="' + action.id + '">');
 
-            row.append($('<td>' + action.html + '</td>'));
+            // we need to update the id of all form elements
+            html.find('input, select, textarea').each(function(_, el){
+                var $el = $(el);
+                $el.attr('name', $el.attr('name') + '[' + num + ']');
+            });
+            row.append($('<td></td>').append(html).append(id_field));
             row.append($('<td></td>').append(remove_btn));
             row.appendTo(this.action_table_body);
 
@@ -701,6 +720,35 @@
 
             this.action_sel.data("select2").clear();
             this.action_table.show();
+        },
+
+        submitForm: function(e) {
+            e.preventDefault();
+
+            var form_data = {
+                actions: [],
+                conditions: [],
+                label: this.form.find('input[name=label]').val()
+            };
+
+            // grab each table row in actions/conditions and create
+            // a suitable form element out of it
+            this.action_table_body.find('tr').each(function(_, el){
+                form_data.actions.push({
+                    id: $(el).data('action-id'),
+                    data: $('input, textarea, select', el).serializeArray() || {}
+                });
+            });
+
+            this.condition_table_body.find('tr').each(function(_, el){
+                form_data.conditions.push({
+                    id: $(el).data('condition-id'),
+                    data: $('input, textarea, select', el).serializeArray() || {}
+                });
+            });
+
+
+            console.log(JSON.stringify(form_data));
         }
 
     });

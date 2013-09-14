@@ -7,10 +7,18 @@
         <a href="{% url 'sentry-new-project-rule' project.team.slug project.slug %}" class="btn pull-right btn-primary">{% trans "New Rule" %}</a>
         <h2>{% trans "Rules" %}</h2>
     </div>
-    <p>Below you'll find each available action along with the triggers specified for it. Each action can have any number of triggers.</p>
-    <h4>Send a notification</h4>
-    <ul>
-    	<li>When an event is first seen</li>
-    	<li>When an event changes from resolved to unresolved</li>
-    </ul>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Rule</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rule in rule_list %}
+                <tr>
+                    <td>{{ rule.label }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}

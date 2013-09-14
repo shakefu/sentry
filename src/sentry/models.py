@@ -419,14 +419,14 @@ class ProjectOption(Model):
 
 class Rule(Model):
     project = models.ForeignKey(Project)
-    rule_id = models.CharField(max_length=64, db_index=True)
+    label = models.CharField(max_length=64)
     data = GzippedDictField()
     date_added = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = 'sentry_rule'
 
-    __repr__ = sane_repr('project_id', 'rule_id')
+    __repr__ = sane_repr('project_id', 'label')
 
 
 class PendingTeamMember(Model):

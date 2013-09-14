@@ -428,17 +428,7 @@ def disable_project_plugin(request, team, project, slug):
 
 @has_access(MEMBER_OWNER)
 def list_rules(request, team, project):
-    from sentry.rules import RULES
-
-    rule_instance_list = sorted(
-        Rule.objects.filter(project=project),
-        key=lambda x: x.date_added
-    )
-    rule_list = []
-    for rule_inst in rule_instance_list:
-        rule_cls = RULES[rule_inst.rule_id]
-        rule = rule_cls(rule_inst)
-        rule_list.append((rule_inst, rule.render_label()))
+    rule_list = Rule.objects.filter(project=project)
 
     context = csrf(request)
     context.update({
@@ -456,6 +446,7 @@ def new_rule(request, team, project):
     from sentry.rules import RULES
 
     form = NewRuleForm(request.POST or None)
+    print request.POST
 
     if request.POST and form.is_valid():
         # rule_cls = RULES[selected_rule]
