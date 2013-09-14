@@ -34,13 +34,6 @@ from django import forms
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
-from sentry.models import Rule as RuleModel
-
-
-NOTIFY_ON_FIRST_SEEN = 1
-NOTIFY_ON_REGRESSION = 2
-NOTIFY_ON_RATE_CHANGE = 3
-
 
 class RuleDescriptor(type):
     def __new__(cls, *args, **kwargs):
@@ -55,27 +48,19 @@ class RuleBase(object):
 
     __metaclass__ = RuleDescriptor
 
-    def __init__(self, instance):
-        self.instance = instance
-
-    @classmethod
-    def from_params(cls, project, data=None):
-        rule = RuleModel(
-            project=project,
-            data=data or {},
-        )
-        return cls(rule)
+    def __init__(self, project, data=None):
+        self.project = project
+        self.data = data or {}
 
     def render_label(self):
-        return self.label.format(**self.instance.data)
+        return self.label.format(**self.data)
 
-    def render_form(self, form_data):
+    def render_form(self):
         if not self.form_cls:
             return self.label
 
         form = self.form_cls(
-            form_data,
-            initial=self.instance.data,
+            initial=self.data,
             prefix=self.id,
         )
 

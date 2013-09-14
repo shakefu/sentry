@@ -465,19 +465,19 @@ def new_rule(request, team, project):
     condition_list = []
 
     for action_cls in rules['actions']:
-        action = action_cls.from_params(project)
+        action = action_cls(project)
         action_list.append({
             'id': action.id,
             'label': action.label,
-            'html': action.render_form(request.POST),
+            'html': action.render_form(),
         })
 
     for condition_cls in rules['conditions']:
-        condition = condition_cls.from_params(project)
+        condition = condition_cls(project)
         condition_list.append({
             'id': condition.id,
             'label': condition.label,
-            'html': condition.render_form(request.POST),
+            'html': condition.render_form(),
         })
 
     context = csrf(request)
