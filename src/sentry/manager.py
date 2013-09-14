@@ -524,6 +524,8 @@ class GroupManager(BaseManager, ChartMixin):
 
                 group.active_at = date
                 group.status = STATUS_UNRESOLVED
+            else:
+                is_regression = False
 
             group.last_seen = extra['last_seen']
 
