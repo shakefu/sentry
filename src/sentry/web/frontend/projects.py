@@ -448,17 +448,17 @@ def new_rule(request, team, project):
     form = NewRuleForm(request.POST or None)
     print request.POST
 
-    if request.POST and form.is_valid():
-        # rule_cls = RULES[selected_rule]
-        # rule = rule_cls.from_params(project)
-        # rule.save(request.POST)
+    # if request.POST and form.is_valid():
+    #     # rule_cls = RULES[selected_rule]
+    #     # rule = rule_cls.from_params(project)
+    #     # rule.save(request.POST)
 
-        messages.add_message(
-            request, messages.SUCCESS,
-            _('Changes to your rule were saved.'))
+    #     messages.add_message(
+    #         request, messages.SUCCESS,
+    #         _('Changes to your rule were saved.'))
 
-        path = reverse('sentry-project-rules', args=[team.slug, project.slug])
-        return HttpResponseRedirect(path)
+    #     path = reverse('sentry-project-rules', args=[team.slug, project.slug])
+    #     return HttpResponseRedirect(path)
 
     rules = RULES['events']
     action_list = []

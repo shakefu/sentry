@@ -33,7 +33,7 @@
                     <tbody></tbody>
                 </table>
                 <div class="controls">
-                    <select name="condition" class="span6" placeholder="add a condition"></select>
+                    <select id="condition-select" class="span6" placeholder="add a condition"></select>
                 </div>
             </fieldset>
 
@@ -48,7 +48,7 @@
                     <tbody></tbody>
                 </table>
                 <div class="controls">
-                    <select name="action" class="span6" placeholder="add an action"></select>
+                    <select id="action-select" class="span6" placeholder="add an action"></select>
                 </div>
             </fieldset>
 
@@ -62,7 +62,8 @@
     new app.NewProjectRulePage({
         el: '#new-rule-form',
         actions: {{ action_list|safe }},
-        conditions: {{ condition_list|safe }}
+        conditions: {{ condition_list|safe }},
+        form_data: {{ request.POST|to_json|safe }}
     });
     </script>
 {% endblock %}

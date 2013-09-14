@@ -623,20 +623,25 @@
     app.NewProjectRulePage = BasePage.extend({
 
         initialize: function(data){
+            var select2_options = {
+                width: 'element',
+                allowClear: false,
+                minimumResultsForSearch: 10
+            };
+
             BasePage.prototype.initialize.apply(this, arguments);
 
-            _.bindAll(this, 'addAction', 'addCondition', 'submitForm');
+            _.bindAll(this, 'addAction', 'addCondition', 'parseFormData');
 
             this.actions_by_id = {};
             this.conditions_by_id = {};
             this.el = $(data.el);
-            this.action_sel = this.el.find('select[name="action"]');
+            this.action_sel = this.el.find('select[id="action-select"]');
             this.action_table = this.el.find('table.action-list');
             this.action_table_body = this.action_table.find('tbody');
-            this.condition_sel = this.el.find('select[name="condition"]');
+            this.condition_sel = this.el.find('select[id="condition-select"]');
             this.condition_table = this.el.find('table.condition-list');
             this.condition_table_body = this.condition_table.find('tbody');
-            this.form = this.el.find('form');
 
             this.action_sel.empty();
             this.action_sel.append($('<option></option>'));
@@ -664,24 +669,72 @@
                 this.conditions_by_id[condition.id] = condition;
             }, this));
 
-            this.action_sel.change(this.addAction);
-            this.condition_sel.change(this.addCondition);
+            this.action_sel.select2(select2_options);
+            this.condition_sel.select2(select2_options);
 
-            this.form.submit(this.submitForm);
+            this.action_sel.change(_.bind(function(){
+                this.addAction(this.action_sel.val());
+            }, this));
+            this.condition_sel.change(_.bind(function(){
+                this.addCondition(this.condition_sel.val());
+            }, this));
+
+            this.parseFormData(data.form_data);
         },
 
-        addCondition: function() {
-            var node = this.conditions_by_id[this.condition_sel.val()];
+        parseFormData: function(form_data) {
+            // start by parsing into condition/action bits
+            var data = {
+                label: form_data.label || '',
+                match: form_data.match || 'all',
+                condition: {},
+                action: {}
+            }
+
+            $.each(form_data, function(key, value){
+                var matches = key.match(/^(condition|action)\[(\d+)\]\[(.+)\]$/);
+                var type, num;
+                if (!matches) {
+                    return;
+                }
+                type = matches[1];
+                num = matches[2];
+                if (data[type][num] === undefined) {
+                    data[type][num] = {}
+                }
+                data[type][num][matches[3]] = value;
+            });
+
+            this.el.find('input[name=label]').val(data.label);
+            this.el.find('select[name=match]').val(data.match);
+
+            $.each(_.sortBy(data.condition), _.bind(function(_, item){
+                this.addCondition(item.id, item);
+            }, this));
+            $.each(_.sortBy(data.action), _.bind(function(_, item){
+                this.addAction(item.id, item);
+            }, this));
+        },
+
+        addCondition: function(id, options) {
+            var node = this.conditions_by_id[id];
             var row = $('<tr></tr>');
             var remove_btn = $('<button class="btn btn-small">Remove</button>');
             var num = this.condition_table_body.find('tr').length;
             var html = $('<div>' + node.html + '</div>');
-            var id_field = $('<input type="hidden" name="id[' + num + ']" value="' + node.id + '">');
+            var prefix = 'condition[' + num + ']';
+            var id_field = $('<input type="hidden" name="' + prefix + '[id]" value="' + node.id + '">');
+
+            if (options === undefined) {
+                options = {};
+            }
 
             // we need to update the id of all form elements
             html.find('input, select, textarea').each(function(_, el){
-                var $el = $(el);
-                $el.attr('name', $el.attr('name') + '[' + num + ']');
+                var $el = $(el),
+                    name = $el.attr('name');
+                $el.attr('name', prefix + '[' + name + ']');
+                $el.val(options[name] || '');
             });
             row.append($('<td></td>').append(html).append(id_field));
             row.append($('<td></td>').append(remove_btn));
@@ -696,18 +749,25 @@
             this.condition_table.show();
         },
 
-        addAction: function() {
-            var action = this.actions_by_id[this.action_sel.val()];
+        addAction: function(id, options) {
+            var node = this.actions_by_id[id];
             var row = $('<tr></tr>');
             var remove_btn = $('<button class="btn btn-small">Remove</button>');
             var num = this.action_table_body.find('tr').length;
-            var html = $('<div>' + action.html + '</div>');
-            var id_field = $('<input type="hidden" name="id[' + num + ']" value="' + action.id + '">');
+            var html = $('<div>' + node.html + '</div>');
+            var prefix = 'action[' + num + ']';
+            var id_field = $('<input type="hidden" name="' + prefix + '[id]" value="' + node.id + '">');
+
+            if (options === undefined) {
+                options = {};
+            }
 
             // we need to update the id of all form elements
             html.find('input, select, textarea').each(function(_, el){
-                var $el = $(el);
-                $el.attr('name', $el.attr('name') + '[' + num + ']');
+                var $el = $(el),
+                    name = $el.attr('name');
+                $el.attr('name', prefix + '[' + name + ']');
+                $el.val(options[name] || '');
             });
             row.append($('<td></td>').append(html).append(id_field));
             row.append($('<td></td>').append(remove_btn));
@@ -720,35 +780,6 @@
 
             this.action_sel.data("select2").clear();
             this.action_table.show();
-        },
-
-        submitForm: function(e) {
-            e.preventDefault();
-
-            var form_data = {
-                actions: [],
-                conditions: [],
-                label: this.form.find('input[name=label]').val()
-            };
-
-            // grab each table row in actions/conditions and create
-            // a suitable form element out of it
-            this.action_table_body.find('tr').each(function(_, el){
-                form_data.actions.push({
-                    id: $(el).data('action-id'),
-                    data: $('input, textarea, select', el).serializeArray() || {}
-                });
-            });
-
-            this.condition_table_body.find('tr').each(function(_, el){
-                form_data.conditions.push({
-                    id: $(el).data('condition-id'),
-                    data: $('input, textarea, select', el).serializeArray() || {}
-                });
-            });
-
-
-            console.log(JSON.stringify(form_data));
         }
 
     });
