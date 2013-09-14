@@ -689,7 +689,7 @@
                 match: form_data.match || 'all',
                 condition: {},
                 action: {}
-            }
+            };
 
             $.each(form_data, function(key, value){
                 var matches = key.match(/^(condition|action)\[(\d+)\]\[(.+)\]$/);
@@ -700,7 +700,7 @@
                 type = matches[1];
                 num = matches[2];
                 if (data[type][num] === undefined) {
-                    data[type][num] = {}
+                    data[type][num] = {};
                 }
                 data[type][num][matches[3]] = value;
             });
