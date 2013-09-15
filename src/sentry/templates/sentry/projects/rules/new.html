@@ -12,6 +12,12 @@
         <form method="POST" action="">
             {% csrf_token %}
 
+            {% if not form_is_valid %}
+                <div class="alert-block alert-error">
+                    <p>There were errors with your submission. Please ensure all options are filled out correctly.</p>
+                </div>
+            {% endif %}
+
             {{ form|as_crispy_errors }}
 
             <fieldset>
@@ -20,7 +26,7 @@
 
             <fieldset>
                 <div><legend>Conditions</legend></div>
-                <p>When <select name="match" style="width:100px" class="select2-small">
+                <p>When <select name="action_match" style="width:100px" class="select2-small">
                     <option value="all">all of</option>
                     <option value="any">any of</option>
                     <option value="none">none of</option>

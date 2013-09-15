@@ -443,24 +443,56 @@ def list_rules(request, team, project):
 
 @has_access(MEMBER_OWNER)
 def new_rule(request, team, project):
+    import re
+    from collections import defaultdict
     from sentry.rules import RULES
 
-    form = NewRuleForm(request.POST or None)
-    print request.POST
-
-    # if request.POST and form.is_valid():
-    #     # rule_cls = RULES[selected_rule]
-    #     # rule = rule_cls.from_params(project)
-    #     # rule.save(request.POST)
-
-    #     messages.add_message(
-    #         request, messages.SUCCESS,
-    #         _('Changes to your rule were saved.'))
-
-    #     path = reverse('sentry-project-rules', args=[team.slug, project.slug])
-    #     return HttpResponseRedirect(path)
-
     rules = RULES['events']
+
+    form = NewRuleForm(request.POST or None)
+
+    is_valid = form.is_valid()
+    if is_valid:
+        key_regexp = r'^(condition|action)\[(\d+)\]\[(.+)\]$'
+        raw_data = defaultdict(lambda: defaultdict(dict))
+        for key, value in request.POST.iteritems():
+            match = re.match(key_regexp, key)
+            if not match:
+                continue
+            raw_data[match.group(1)][match.group(2)][match.group(3)] = value
+
+        data = {
+            'action_match': request.POST.get('action_match', 'all'),
+            'actions': [],
+            'conditions': [],
+        }
+
+        for num, node in sorted(raw_data['conditions'].iteritems()):
+            cls = rules['conditions'][node.pop('id')]
+            if not cls(node).is_valid():
+                is_valid = False
+            data['conditions'].append(node)
+
+        for num, node in sorted(raw_data['actions'].iteritems()):
+            cls = rules['actions'][node.pop('id')]
+            if not cls(node).is_valid():
+                is_valid = False
+            data['actions'].append(node)
+
+    if is_valid:
+        Rule.objects.create(
+            project=project,
+            label=form.cleaned_data['label'],
+            data=data,
+        )
+
+        messages.add_message(
+            request, messages.SUCCESS,
+            _('Changes to your rule were saved.'))
+
+        path = reverse('sentry-project-rules', args=[team.slug, project.slug])
+        return HttpResponseRedirect(path)
+
     action_list = []
     condition_list = []
 
@@ -482,6 +514,7 @@ def new_rule(request, team, project):
 
     context = csrf(request)
     context.update({
+        'form_is_valid': is_valid,
         'team': team,
         'page': 'rules',
         'action_list': json.dumps(action_list),

@@ -685,10 +685,10 @@
         parseFormData: function(form_data) {
             // start by parsing into condition/action bits
             var data = {
-                label: form_data.label || '',
-                match: form_data.match || 'all',
-                condition: {},
                 action: {}
+                action_match: form_data.action_match || 'all',
+                condition: {},
+                label: form_data.label || '',
             };
 
             $.each(form_data, function(key, value){
@@ -706,7 +706,7 @@
             });
 
             this.el.find('input[name=label]').val(data.label);
-            this.el.find('select[name=match]').val(data.match);
+            this.el.find('select[name="action_match"]').val(data.action_match);
 
             $.each(_.sortBy(data.condition), _.bind(function(_, item){
                 this.addCondition(item.id, item);

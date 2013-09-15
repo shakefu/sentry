@@ -61,7 +61,6 @@ class RuleBase(object):
 
         form = self.form_cls(
             initial=self.data,
-            prefix=self.id,
         )
 
         def replace_field(match):
@@ -70,31 +69,15 @@ class RuleBase(object):
 
         return mark_safe(re.sub(r'{([^}]+)}', replace_field, escape(self.label)))
 
+    def validate_form(self):
+        if not self.form_cls:
+            return True
 
-# class Rule(RuleMixin):
-#     __metaclass__ = RuleBase
+        form = self.form_cls(
+            initial=self.data,
+        )
 
-#     def before(self, event):
-#         # should this pass event or the data?
-#         return event
-
-#     def after(self, event, is_new, is_regression, **kwargs):
-#         pass
-
-#     def save(self, form_data):
-#         instance = self.instance
-
-#         if self.form_cls:
-#             form = self.form_cls(
-#                 form_data,
-#                 initial=self.instance.data,
-#                 prefix=self.id,
-#             )
-#             assert form.is_valid(), 'Form was not valid: %r' % (form.errors,)
-#             instance.data = form.cleaned_data
-
-#         instance.rule_id = self.id
-#         instance.save()
+        return form.is_valid()
 
 
 class EventAction(RuleBase):
