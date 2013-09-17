@@ -21,11 +21,11 @@ from sentry.permissions import (
     can_remove_project, can_add_project_key, can_remove_project_key)
 from sentry.plugins import plugins
 from sentry.utils import json
+from sentry.utils.cache import memoize
 from sentry.web.decorators import login_required, has_access
 from sentry.web.forms.projects import (
     ProjectTagsForm, RemoveProjectForm, EditProjectForm,
-    NotificationTagValuesForm, AlertSettingsForm, ProjectQuotasForm,
-    NewRuleForm)
+    NotificationTagValuesForm, AlertSettingsForm, ProjectQuotasForm)
 from sentry.web.helpers import render_to_response, plugin_config
 
 
@@ -441,50 +441,106 @@ def list_rules(request, team, project):
     return render_to_response('sentry/projects/rules/list.html', context, request)
 
 
-@has_access(MEMBER_OWNER)
-def new_rule(request, team, project):
-    import re
-    from collections import defaultdict
-    from sentry.rules import RULES
+class RuleFormValidator(object):
+    # XXX(dcramer): please no judgements on any of the rule code, I realize it's
+    # all terrible and poorly described
+    def __init__(self, project, data=None):
+        from sentry.rules import RULES
 
-    rules = RULES['events']
+        self.project = project
+        self.data = data
+        self.rules = RULES['events']
+        self.errors = {}
 
-    form = NewRuleForm(request.POST or None)
+    @memoize
+    def cleaned_data(self):
+        import re
+        from collections import defaultdict
 
-    is_valid = form.is_valid()
-    if is_valid:
+        # parse out rules
+        rules_by_id = {
+            'actions': {},
+            'conditions': {},
+        }
+        for node in self.rules['conditions']:
+            rules_by_id['conditions'][node.id] = node
+        for node in self.rules['actions']:
+            rules_by_id['actions'][node.id] = node
+
         key_regexp = r'^(condition|action)\[(\d+)\]\[(.+)\]$'
         raw_data = defaultdict(lambda: defaultdict(dict))
-        for key, value in request.POST.iteritems():
+        for key, value in self.data.iteritems():
             match = re.match(key_regexp, key)
             if not match:
                 continue
             raw_data[match.group(1)][match.group(2)][match.group(3)] = value
 
         data = {
-            'action_match': request.POST.get('action_match', 'all'),
+            'label': self.data.get('label', '').strip(),
+            'action_match': self.data.get('action_match', 'all'),
             'actions': [],
             'conditions': [],
         }
 
-        for num, node in sorted(raw_data['conditions'].iteritems()):
-            cls = rules['conditions'][node.pop('id')]
-            if not cls(node).is_valid():
-                is_valid = False
+        for num, node in sorted(raw_data['condition'].iteritems()):
             data['conditions'].append(node)
+            cls = rules_by_id['conditions'][node['id']]
+            if not cls(self.project, node).validate_form():
+                self.errors['condition[%s]' % (num,)] = 'Ensure all fields are filled out correctly.'
 
-        for num, node in sorted(raw_data['actions'].iteritems()):
-            cls = rules['actions'][node.pop('id')]
-            if not cls(node).is_valid():
-                is_valid = False
+        for num, node in sorted(raw_data['action'].iteritems()):
             data['actions'].append(node)
+            cls = rules_by_id['actions'][node['id']]
+            if not cls(self.project, node).validate_form():
+                self.errors['action[%s]' % (num,)] = 'Ensure all fields are filled out correctly.'
 
-    if is_valid:
-        Rule.objects.create(
-            project=project,
-            label=form.cleaned_data['label'],
-            data=data,
-        )
+        if not data['label'] or len(data['label']) > 64:
+            self.errors['label'] = 'Value must be less than 64 characters.'
+
+        return data
+
+    def is_valid(self):
+        # force validation
+        self.cleaned_data
+        return not bool(self.errors)
+
+
+@has_access(MEMBER_OWNER)
+def create_or_edit_rule(request, team, project, rule_id=None):
+    from sentry.rules import RULES
+
+    if rule_id:
+        rule = Rule.objects.get(project=project, id=rule_id)
+    else:
+        rule = Rule(project=project)
+
+    rules = RULES['events']
+
+    form_data = {
+        'label': rule.label,
+        'action_match': rule.data.get('action_match'),
+    }
+
+    for num, node in enumerate(rule.data.get('conditions', [])):
+        prefix = 'condition[%d]' % (num,)
+        for key, value in node.iteritems():
+            form_data[prefix + '[' + key + ']'] = value
+
+    for num, node in enumerate(rule.data.get('actions', [])):
+        prefix = 'action[%d]' % (num,)
+        for key, value in node.iteritems():
+            form_data[prefix + '[' + key + ']'] = value
+
+    for key, value in request.POST.iteritems():
+        form_data[key] = value
+
+    validator = RuleFormValidator(project, form_data)
+    if request.POST and validator.is_valid():
+        data = validator.cleaned_data.copy()
+
+        rule.label = data.pop('label')
+        rule.data = data
+        rule.save()
 
         messages.add_message(
             request, messages.SUCCESS,
@@ -496,30 +552,32 @@ def new_rule(request, team, project):
     action_list = []
     condition_list = []
 
-    for action_cls in rules['actions']:
-        action = action_cls(project)
+    for cls in rules['actions']:
+        node = cls(project)
         action_list.append({
-            'id': action.id,
-            'label': action.label,
-            'html': action.render_form(),
+            'id': node.id,
+            'label': node.label,
+            'html': node.render_form(),
         })
 
-    for condition_cls in rules['conditions']:
-        condition = condition_cls(project)
+    for cls in rules['conditions']:
+        node = cls(project)
         condition_list.append({
-            'id': condition.id,
-            'label': condition.label,
-            'html': condition.render_form(),
+            'id': node.id,
+            'label': node.label,
+            'html': node.render_form(),
         })
 
     context = csrf(request)
     context.update({
-        'form_is_valid': is_valid,
+        'rule': rule.id,
+        'form_is_valid': (not request.POST or validator.is_valid()),
+        'form_errors': validator.errors,
+        'form_data': form_data,
         'team': team,
         'page': 'rules',
         'action_list': json.dumps(action_list),
         'condition_list': json.dumps(condition_list),
-        'form': form,
         'project': project,
     })
 

@@ -60,7 +60,7 @@ class RuleBase(object):
             return self.label
 
         form = self.form_cls(
-            initial=self.data,
+            self.data,
         )
 
         def replace_field(match):
@@ -74,7 +74,7 @@ class RuleBase(object):
             return True
 
         form = self.form_cls(
-            initial=self.data,
+            self.data,
         )
 
         return form.is_valid()

@@ -679,17 +679,18 @@
                 this.addCondition(this.condition_sel.val());
             }, this));
 
-            this.parseFormData(data.form_data);
+            this.parseFormData(data.form_data, data.form_errors);
         },
 
-        parseFormData: function(form_data) {
+        parseFormData: function(form_data, form_errors) {
             // start by parsing into condition/action bits
             var data = {
-                action: {}
-                action_match: form_data.action_match || 'all',
-                condition: {},
-                label: form_data.label || '',
-            };
+                    action: {},
+                    action_match: form_data.action_match || 'all',
+                    condition: {},
+                    label: form_data.label || '',
+                },
+                form_errors = form_errors || {};
 
             $.each(form_data, function(key, value){
                 var matches = key.match(/^(condition|action)\[(\d+)\]\[(.+)\]$/);
@@ -708,26 +709,31 @@
             this.el.find('input[name=label]').val(data.label);
             this.el.find('select[name="action_match"]').val(data.action_match);
 
-            $.each(_.sortBy(data.condition), _.bind(function(_, item){
-                this.addCondition(item.id, item);
+            console.log(form_errors);
+
+            $.each(_.sortBy(data.condition), _.bind(function(num, item){
+                this.addCondition(item.id, item, form_errors['condition[' + num + ']'] || false);
             }, this));
-            $.each(_.sortBy(data.action), _.bind(function(_, item){
-                this.addAction(item.id, item);
+            $.each(_.sortBy(data.action), _.bind(function(num, item){
+                this.addAction(item.id, item, form_errors['action[' + num + ']'] || false);
             }, this));
         },
 
-        addCondition: function(id, options) {
-            var node = this.conditions_by_id[id];
-            var row = $('<tr></tr>');
-            var remove_btn = $('<button class="btn btn-small">Remove</button>');
-            var num = this.condition_table_body.find('tr').length;
-            var html = $('<div>' + node.html + '</div>');
-            var prefix = 'condition[' + num + ']';
-            var id_field = $('<input type="hidden" name="' + prefix + '[id]" value="' + node.id + '">');
+        addCondition: function(id, options, has_errors) {
+            var node = this.conditions_by_id[id],
+                row = $('<tr></tr>'),
+                remove_btn = $('<button class="btn btn-small">Remove</button>'),
+                num = this.condition_table_body.find('tr').length,
+                html = $('<div>' + node.html + '</div>'),
+                prefix = 'condition[' + num + ']',
+                id_field = $('<input type="hidden" name="' + prefix + '[id]" value="' + node.id + '">'),
+                has_errors = has_errors || false,
+                options = options || {};
 
-            if (options === undefined) {
-                options = {};
+            if (has_errors) {
+                row.addClass('error');
             }
+
 
             // we need to update the id of all form elements
             html.find('input, select, textarea').each(function(_, el){
@@ -749,18 +755,16 @@
             this.condition_table.show();
         },
 
-        addAction: function(id, options) {
-            var node = this.actions_by_id[id];
-            var row = $('<tr></tr>');
-            var remove_btn = $('<button class="btn btn-small">Remove</button>');
-            var num = this.action_table_body.find('tr').length;
-            var html = $('<div>' + node.html + '</div>');
-            var prefix = 'action[' + num + ']';
-            var id_field = $('<input type="hidden" name="' + prefix + '[id]" value="' + node.id + '">');
-
-            if (options === undefined) {
-                options = {};
-            }
+        addAction: function(id, options, has_errors) {
+            var node = this.actions_by_id[id],
+                row = $('<tr></tr>'),
+                remove_btn = $('<button class="btn btn-small">Remove</button>'),
+                num = this.action_table_body.find('tr').length,
+                html = $('<div>' + node.html + '</div>'),
+                prefix = 'action[' + num + ']',
+                id_field = $('<input type="hidden" name="' + prefix + '[id]" value="' + node.id + '">'),
+                has_errors = has_errors || false,
+                options = options || {};
 
             // we need to update the id of all form elements
             html.find('input, select, textarea').each(function(_, el){

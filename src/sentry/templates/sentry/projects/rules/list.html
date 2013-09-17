@@ -16,7 +16,9 @@
         <tbody>
             {% for rule in rule_list %}
                 <tr>
-                    <td>{{ rule.label }}</td>
+                    <td>
+                        <a href="{% url 'sentry-edit-project-rule' project.team.slug project.slug rule.id %}">{{ rule.label }}</a>
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

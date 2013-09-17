@@ -6,22 +6,30 @@
 
 {% block inner %}
     <div class="page-header">
-        <h2>{% trans "New Rule" %}</h2>
+        <h2>
+            {% if rule.id %}
+                {% trans "Edit Rule" %}
+            {% else %}
+                {% trans "New Rule" %}
+            {% endif %}
+        </h2>
     </div>
     <div id="new-rule-form">
         <form method="POST" action="">
             {% csrf_token %}
 
             {% if not form_is_valid %}
-                <div class="alert-block alert-error">
-                    <p>There were errors with your submission. Please ensure all options are filled out correctly.</p>
+                <div class="alert-block alert alert-error">
+                    <p>{% trans "There were errors with your submission. Please ensure all options are filled out correctly." %}</p>
                 </div>
             {% endif %}
 
             {{ form|as_crispy_errors }}
 
             <fieldset>
-                {{ form.label|as_crispy_field }}
+                <div class="controls{% if form_errors.label %} error{% endif %}">
+                    <label>{% trans "Label:" %}</label> <input type="text" name="label" placeholder="{% trans "e.g. My Rule Name" %}">
+                </div>
             </fieldset>
 
             <fieldset>
@@ -69,7 +77,8 @@
         el: '#new-rule-form',
         actions: {{ action_list|safe }},
         conditions: {{ condition_list|safe }},
-        form_data: {{ request.POST|to_json|safe }}
+        form_data: {{ form_data|to_json|safe }},
+        form_errors: {{ form_errors|to_json|safe }}
     });
     </script>
 {% endblock %}
