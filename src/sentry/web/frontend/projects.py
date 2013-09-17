@@ -570,7 +570,7 @@ def create_or_edit_rule(request, team, project, rule_id=None):
 
     context = csrf(request)
     context.update({
-        'rule': rule.id,
+        'rule': rule,
         'form_is_valid': (not request.POST or validator.is_valid()),
         'form_errors': validator.errors,
         'form_data': form_data,
