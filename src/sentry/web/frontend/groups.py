@@ -428,12 +428,22 @@ def group(request, team, project, group, event_id=None):
         seen_by_extra = 0
     seen_by_faces = seen_by[:5]
 
+    note_list = [
+        Activity(project=project, group=group, type=Activity.NOTE,
+                 user=request.user, data={'text': 'This is an example short note.'}),
+        Activity(project=project, group=group, type=Activity.NOTE,
+                 user=request.user, data={'text': """Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam ornare mi id metus tempor facilisis. Nunc tellus risus, imperdiet quis purus at, facilisis viverra nunc. Sed tincidunt quis urna eget lacinia. Nullam iaculis sed odio vel semper. Nulla facilisi. Donec in volutpat ligula, at facilisis nulla. Pellentesque leo elit, mollis nec porttitor et, iaculis vitae lectus. Donec ultricies eu elit eget porttitor. Suspendisse at libero tempus mauris auctor aliquam vitae ac dui. Duis fringilla diam id turpis sagittis auctor.
+
+Pellentesque nec pharetra ipsum. Cras lacus lectus, semper ut augue quis, dictum hendrerit ipsum. Etiam aliquet justo nec massa adipiscing, nec aliquam risus adipiscing. Cras eu dapibus eros. Vestibulum dapibus consequat dolor vitae facilisis. Integer pharetra euismod lobortis. Vestibulum nibh velit, consectetur non mauris vitae, consectetur consectetur tortor. Nunc eget purus leo. Integer nisi enim, scelerisque et dolor vitae, ornare semper leo."""}),
+    ]
+
     context = {
         'page': 'details',
         'activity': activity,
         'seen_by': seen_by,
         'seen_by_faces': seen_by_faces,
         'seen_by_extra': seen_by_extra,
+        'note_list': note_list,
     }
 
     is_public = group_is_public(group, request.user)

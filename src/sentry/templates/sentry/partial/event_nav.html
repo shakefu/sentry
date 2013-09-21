@@ -45,7 +45,7 @@
                 </li>
             {% endif %}
             <li>
-                <a href="#comments">{% trans "Comments (0)" %}</a>
+                <a href="#comments">{% blocktrans with num=note_list|length %}Notes ({{ num }}){% endblocktrans %}</a>
             </li>
         </ul>
     </div>

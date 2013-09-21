@@ -62,8 +62,23 @@
 
                 <div id="comments">
                     <div class="page-header">
-                        <h2>{% trans "Comments" %}></h2>
+                        <h2>{% trans "Notes" %}</h2>
                     </div>
+                    <form style="width:460px">
+                        <textarea style="height:70px;width:440px;" placeholder="add details about this event"></textarea>
+                        <div style="text-align: right;">
+                            <input type="submit" value="{% trans "Add Note" %}" class="btn btn-primary">
+                        </div>
+                    </form>
+
+                    <ul class="note-list">
+                        {% for note in note_list %}
+                            <li class="note">
+                                <strong>{{ note.user|user_display_name }}</strong> &mdash; <small>{{ note.datetime|timesince }}</small>
+                                {{ note.data.text|urlize|linebreaks }}
+                            </li>
+                        {% endfor %}
+                    </ul>
                 </div>
             {% endwith %}
         {% endblock %}
