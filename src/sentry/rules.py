@@ -83,6 +83,15 @@ class RuleBase(object):
         return form.is_valid()
 
 
+class MatchType(object):
+    EQUAL = 'eq'
+    NOT_EQUAL = 'ne'
+    STARTS_WITH = 'sw'
+    ENDS_WITH = 'ew'
+    CONTAINS = 'co'
+    NOT_CONTAINS = 'nc'
+
+
 class EventAction(RuleBase):
     def before(self, event):
         # should this pass event or the data?
@@ -129,10 +138,12 @@ class RegressionEventCondition(EventCondition):
 class TaggedEventForm(forms.Form):
     key = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'key'}))
     match = forms.ChoiceField(choices=(
-        ('eq', 'equals'),
-        ('sw', 'starts with'),
-        ('ew', 'ends with'),
-        ('co', 'contains'),
+        (MatchType.EQUAL, 'equals'),
+        (MatchType.NOT_EQUAL, 'does not equal'),
+        (MatchType.STARTS_WITH, 'starts with'),
+        (MatchType.ENDS_WITH, 'ends with'),
+        (MatchType.CONTAINS, 'contains'),
+        (MatchType.NOT_CONTAINS, 'does not contain'),
     ))
     value = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'value'}))
 
@@ -148,29 +159,41 @@ class TaggedEventCondition(EventCondition):
 
         tags = (v for k, v in event.get_tags() if k == key)
 
-        if match == 'eq':
+        if match == MatchType.EQUAL:
             for t_value in tags:
                 if t_value == value:
                     return True
             return False
 
-        elif match == 'sw':
+        elif match == MatchType.NOT_EQUAL:
+            for t_value in tags:
+                if t_value == value:
+                    return False
+            return True
+
+        elif match == MatchType.STARTS_WITH:
             for t_value in tags:
                 if t_value.startswith(value):
                     return True
             return False
 
-        elif match == 'ew':
+        elif match == MatchType.ENDS_WITH:
             for t_value in tags:
                 if t_value.endswith(value):
                     return True
             return False
 
-        elif match == 'co':
+        elif match == MatchType.CONTAINS:
             for t_value in tags:
                 if value in t_value:
                     return True
             return False
+
+        elif match == MatchType.NOT_CONTAINS:
+            for t_value in tags:
+                if value in t_value:
+                    return False
+            return True
 
 
 # class TimesSeenEventForm(forms.Form):

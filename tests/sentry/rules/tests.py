@@ -1,5 +1,6 @@
 from sentry.rules import (
-    FirstSeenEventCondition, RegressionEventCondition, TaggedEventCondition
+    MatchType, FirstSeenEventCondition, RegressionEventCondition,
+    TaggedEventCondition,
 )
 from sentry.testutils import TestCase
 
@@ -66,30 +67,46 @@ class TaggedEventConditionTest(RuleTestCase):
     def test_equals(self):
         event = self.get_event()
         rule = self.get_rule({
-            'match': 'eq',
+            'match': MatchType.EQUAL,
             'key': 'logger',
             'value': 'sentry.example',
         })
         self.assertPasses(rule, event)
 
         rule = self.get_rule({
-            'match': 'eq',
+            'match': MatchType.EQUAL,
             'key': 'logger',
             'value': 'sentry.other.example',
         })
         self.assertDoesNotPass(rule, event)
 
+    def test_does_not_equal(self):
+        event = self.get_event()
+        rule = self.get_rule({
+            'match': MatchType.NOT_EQUAL,
+            'key': 'logger',
+            'value': 'sentry.example',
+        })
+        self.assertDoesNotPass(rule, event)
+
+        rule = self.get_rule({
+            'match': MatchType.NOT_EQUAL,
+            'key': 'logger',
+            'value': 'sentry.other.example',
+        })
+        self.assertPasses(rule, event)
+
     def test_starts_with(self):
         event = self.get_event()
         rule = self.get_rule({
-            'match': 'sw',
+            'match': MatchType.STARTS_WITH,
             'key': 'logger',
             'value': 'sentry.',
         })
         self.assertPasses(rule, event)
 
         rule = self.get_rule({
-            'match': 'sw',
+            'match': MatchType.STARTS_WITH,
             'key': 'logger',
             'value': 'bar.',
         })
@@ -98,14 +115,14 @@ class TaggedEventConditionTest(RuleTestCase):
     def test_ends_with(self):
         event = self.get_event()
         rule = self.get_rule({
-            'match': 'ew',
+            'match': MatchType.ENDS_WITH,
             'key': 'logger',
             'value': '.example',
         })
         self.assertPasses(rule, event)
 
         rule = self.get_rule({
-            'match': 'ew',
+            'match': MatchType.ENDS_WITH,
             'key': 'logger',
             'value': '.foo',
         })
@@ -114,15 +131,31 @@ class TaggedEventConditionTest(RuleTestCase):
     def test_contains(self):
         event = self.get_event()
         rule = self.get_rule({
-            'match': 'co',
+            'match': MatchType.CONTAINS,
             'key': 'logger',
             'value': 'sentry',
         })
         self.assertPasses(rule, event)
 
         rule = self.get_rule({
-            'match': 'co',
+            'match': MatchType.CONTAINS,
             'key': 'logger',
             'value': 'bar.foo',
         })
         self.assertDoesNotPass(rule, event)
+
+    def test_does_not_contain(self):
+        event = self.get_event()
+        rule = self.get_rule({
+            'match': MatchType.NOT_CONTAINS,
+            'key': 'logger',
+            'value': 'sentry',
+        })
+        self.assertDoesNotPass(rule, event)
+
+        rule = self.get_rule({
+            'match': MatchType.NOT_CONTAINS,
+            'key': 'logger',
+            'value': 'bar.foo',
+        })
+        self.assertPasses(rule, event)
