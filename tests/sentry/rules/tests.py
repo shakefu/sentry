@@ -1,4 +1,4 @@
-from sentry.rules import FirstSeenEventCondition
+from sentry.rules import FirstSeenEventCondition, RegressionEventCondition
 from sentry.testutils import TestCase
 
 
@@ -35,3 +35,14 @@ class FirstSeenEventConditionTest(RuleTestCase):
         self.assertPasses(rule, self.event, is_new=True)
 
         self.assertDoesNotPass(rule, self.event, is_new=False)
+
+
+class RegressionEventConditionTest(RuleTestCase):
+    rule_cls = RegressionEventCondition
+
+    def test_applies_correctly(self):
+        rule = self.get_rule()
+
+        self.assertPasses(rule, self.event, is_regression=True)
+
+        self.assertDoesNotPass(rule, self.event, is_regression=False)
