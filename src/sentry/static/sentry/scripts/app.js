@@ -734,6 +734,20 @@
                 row.addClass('error');
             }
 
+            html.find('select').each(function(){
+                var $this = $(this),
+                    options = {
+                        width: 'element',
+                        allowClear: false,
+                        minimumResultsForSearch: 10
+                    };
+
+                if ($this.attr('data-allowClear')) {
+                    options.allowClear = $this.attr('data-allowClear');
+                }
+
+                $this.select2(options);
+            });
 
             // we need to update the id of all form elements
             html.find('input, select, textarea').each(function(_, el){
@@ -766,6 +780,25 @@
 
             has_errors = has_errors || false;
             options = options || {};
+
+            if (has_errors) {
+                row.addClass('error');
+            }
+
+            html.find('select').each(function(){
+                var $this = $(this),
+                    options = {
+                        width: 'element',
+                        allowClear: false,
+                        minimumResultsForSearch: 10
+                    };
+
+                if ($this.attr('data-allowClear')) {
+                    options.allowClear = $this.attr('data-allowClear');
+                }
+
+                $this.select2(options);
+            });
 
             // we need to update the id of all form elements
             html.find('input, select, textarea').each(function(_, el){
