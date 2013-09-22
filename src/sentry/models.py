@@ -417,18 +417,6 @@ class ProjectOption(Model):
     __repr__ = sane_repr('project_id', 'key', 'value')
 
 
-class Rule(Model):
-    project = models.ForeignKey(Project)
-    label = models.CharField(max_length=64)
-    data = GzippedDictField()
-    date_added = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'sentry_rule'
-
-    __repr__ = sane_repr('project_id', 'label')
-
-
 class PendingTeamMember(Model):
     """
     Identifies relationships between teams and pending invites.
@@ -1097,6 +1085,7 @@ class Activity(Model):
     SET_REGRESSION = 6
     CREATE_ISSUE = 7
     NOTE = 8
+    APPLY_RULE = 9
 
     TYPE = (
         # (TYPE, verb-slug)
@@ -1108,6 +1097,7 @@ class Activity(Model):
         (SET_REGRESSION, 'set_regression'),
         (CREATE_ISSUE, 'create_issue'),
         (NOTE, 'note'),
+        (APPLY_RULE, 'apply_rule'),
     )
 
     project = models.ForeignKey(Project)
@@ -1238,6 +1228,18 @@ class AlertRelatedGroup(Model):
         unique_together = (('group', 'alert'),)
 
     __repr__ = sane_repr('group_id', 'alert_id')
+
+
+class Rule(Model):
+    project = models.ForeignKey(Project)
+    label = models.CharField(max_length=64)
+    data = GzippedDictField()
+    date_added = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'sentry_rule'
+
+    __repr__ = sane_repr('project_id', 'label')
 
 
 def create_default_project(created_models, verbosity=2, **kwargs):
