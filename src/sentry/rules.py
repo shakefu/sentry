@@ -52,6 +52,9 @@ class RuleBase(object):
         self.project = project
         self.data = data or {}
 
+    def get_option(self, key):
+        return self.data.get(key)
+
     def render_label(self):
         return self.label.format(**self.data)
 
@@ -125,15 +128,49 @@ class RegressionEventCondition(EventCondition):
 
 class TaggedEventForm(forms.Form):
     key = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'key'}))
+    match = forms.ChoiceField(choices=(
+        ('eq', 'equals'),
+        ('sw', 'starts with'),
+        ('ew', 'ends with'),
+        ('co', 'contains'),
+    ))
     value = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'value'}))
 
 
 class TaggedEventCondition(EventCondition):
     form_cls = TaggedEventForm
-    label = 'An event is tagged with {key}={value}'
+    label = 'An events tags match {key} {match} {value}'
 
     def passes(self, event, is_regression, **kwargs):
-        return (self.get_option('key'), self.get_option('value')) in event.get_tags()
+        key = self.get_option('key')
+        match = self.get_option('match')
+        value = self.get_option('value')
+
+        tags = (v for k, v in event.get_tags() if k == key)
+
+        if match == 'eq':
+            for t_value in tags:
+                if t_value == value:
+                    return True
+            return False
+
+        elif match == 'sw':
+            for t_value in tags:
+                if t_value.startswith(value):
+                    return True
+            return False
+
+        elif match == 'ew':
+            for t_value in tags:
+                if t_value.endswith(value):
+                    return True
+            return False
+
+        elif match == 'co':
+            for t_value in tags:
+                if value in t_value:
+                    return True
+            return False
 
 
 # class TimesSeenEventForm(forms.Form):
