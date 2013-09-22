@@ -123,16 +123,29 @@ class RegressionEventCondition(EventCondition):
         return is_regression
 
 
-class TimesSeenEventForm(forms.Form):
-    num = forms.IntegerField(widget=forms.TextInput(attrs={'type': 'number'}))
+class TaggedEventForm(forms.Form):
+    key = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'key'}))
+    value = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'value'}))
 
 
-class TimesSeenEventCondition(EventCondition):
-    form_cls = TimesSeenEventForm
-    label = 'An event is seen more than {num} times'
+class TaggedEventCondition(EventCondition):
+    form_cls = TaggedEventForm
+    label = 'An event is tagged with {key}={value}'
 
-    def passes(self, event):
-        return event.times_seen == self.get_option('num')
+    def passes(self, event, is_regression, **kwargs):
+        return (self.get_option('key'), self.get_option('value')) in event.get_tags()
+
+
+# class TimesSeenEventForm(forms.Form):
+#     num = forms.IntegerField(widget=forms.TextInput(attrs={'type': 'number'}))
+
+
+# class TimesSeenEventCondition(EventCondition):
+#     form_cls = TimesSeenEventForm
+#     label = 'An event is seen more than {num} times'
+
+#     def passes(self, event):
+#         return event.times_seen == self.get_option('num')
 
 
 RULES = {
@@ -143,7 +156,7 @@ RULES = {
         'conditions': [
             FirstSeenEventCondition,
             RegressionEventCondition,
-            TimesSeenEventCondition,
+            TaggedEventCondition,
         ],
     }
 }
