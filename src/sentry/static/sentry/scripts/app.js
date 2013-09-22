@@ -688,9 +688,10 @@
                     action: {},
                     action_match: form_data.action_match || 'all',
                     condition: {},
-                    label: form_data.label || '',
-                },
-                form_errors = form_errors || {};
+                    label: form_data.label || ''
+                };
+
+            form_errors = form_errors || {};
 
             $.each(form_data, function(key, value){
                 var matches = key.match(/^(condition|action)\[(\d+)\]\[(.+)\]$/);
@@ -709,8 +710,6 @@
             this.el.find('input[name=label]').val(data.label);
             this.el.find('select[name="action_match"]').val(data.action_match);
 
-            console.log(form_errors);
-
             $.each(_.sortBy(data.condition), _.bind(function(num, item){
                 this.addCondition(item.id, item, form_errors['condition[' + num + ']'] || false);
             }, this));
@@ -726,9 +725,10 @@
                 num = this.condition_table_body.find('tr').length,
                 html = $('<div>' + node.html + '</div>'),
                 prefix = 'condition[' + num + ']',
-                id_field = $('<input type="hidden" name="' + prefix + '[id]" value="' + node.id + '">'),
-                has_errors = has_errors || false,
-                options = options || {};
+                id_field = $('<input type="hidden" name="' + prefix + '[id]" value="' + node.id + '">');
+
+            has_errors = has_errors || false;
+            options = options || {};
 
             if (has_errors) {
                 row.addClass('error');
@@ -762,9 +762,10 @@
                 num = this.action_table_body.find('tr').length,
                 html = $('<div>' + node.html + '</div>'),
                 prefix = 'action[' + num + ']',
-                id_field = $('<input type="hidden" name="' + prefix + '[id]" value="' + node.id + '">'),
-                has_errors = has_errors || false,
-                options = options || {};
+                id_field = $('<input type="hidden" name="' + prefix + '[id]" value="' + node.id + '">');
+
+            has_errors = has_errors || false;
+            options = options || {};
 
             // we need to update the id of all form elements
             html.find('input, select, textarea').each(function(_, el){
